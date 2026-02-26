@@ -1,6 +1,6 @@
 export const metadata = {
-  title: "Poster Maker",
-  description: "Generate Daraz/WhatsApp/Facebook posters",
+  title: "Free Poster Prompt Generator",
+  description: "Daraz / WhatsApp / Facebook prompt generator",
 };
 
 export default function RootLayout({
@@ -10,7 +10,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body style={{ margin: 0 }}>{children}</body>
+      <body style={{ margin: 0, fontFamily: "system-ui" }}>{children}</body>
     </html>
   );
 }
