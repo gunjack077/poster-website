@@ -1,136 +1,94 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
-type Result = { variant: string; b64: string };
 type Mode = "daraz" | "whatsapp" | "facebook";
 
 export default function Home() {
-  const [file, setFile] = useState<File | null>(null);
   const [mode, setMode] = useState<Mode>("daraz");
-  const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState<Result[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [prompt, setPrompt] = useState("");
 
-  const previewUrl = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
+  function generatePrompt() {
+    const base =
+      `Create a premium cosmetic advertisement poster using the uploaded sunscreen product image as the main hero. ` +
+      `Use glossy studio lighting, realistic shadow, premium cosmetic branding, clean typography, high contrast. ` +
+      `Avoid distorted or random text. Keep headlines bold and minimal. `;
 
-  async function generate() {
-    if (!file) return;
+    const platformPrompts = {
+      daraz:
+        `Format: Square 1:1 (1080x1080). Marketplace style. ` +
+        `Headline: "SPF 45+ SUNSCREEN". ` +
+        `Add 3 benefit icons: "UVA/UVB Protection", "No White Cast", "Lightweight & Non-Greasy". ` +
+        `Add bold CTA button: "BUY NOW". ` +
+        `Bright sun-kissed orange/golden background.`,
 
-    setLoading(true);
-    setError(null);
-    setResults([]);
+      whatsapp:
+        `Format: Vertical 9:16 (1080x1920). WhatsApp Status style. ` +
+        `Minimal text. Big product focus. ` +
+        `Headline: "Protect Your Skin Every Day". ` +
+        `2 benefits only. Big glowing CTA: "ORDER NOW". ` +
+        `Luxury summer vibe background.`,
 
-    try {
-      const form = new FormData();
-      form.append("image", file);
-      form.append("mode", mode);
+      facebook:
+        `Format: 4:5 (1080x1350). Facebook feed ad style. ` +
+        `Headline: "Ready for the Sun?". ` +
+        `Add clean benefit list with check icons. ` +
+        `CTA button: "SHOP NOW". ` +
+        `Premium cosmetic lighting with beach/sun theme.`
+    };
 
-      const res = await fetch("/api/generate", { method: "POST", body: form });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json?.error || "Failed");
-
-      setResults(json.results || []);
-    } catch (e: any) {
-      setError(e?.message || "Error");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function download(b64: string, name: string) {
-    const a = document.createElement("a");
-    a.href = `data:image/png;base64,${b64}`;
-    a.download = name;
-    a.click();
+    setPrompt(base + platformPrompts[mode]);
   }
 
   return (
-    <main style={{ maxWidth: 1040, margin: "40px auto", padding: 16, fontFamily: "system-ui" }}>
-      <h1 style={{ fontSize: 28, marginBottom: 6 }}>Poster Maker (Daraz / WhatsApp / Facebook)</h1>
-      <p style={{ opacity: 0.8, marginTop: 0 }}>
-        Upload product image → generate posters automatically.
-      </p>
+    <main style={{ maxWidth: 900, margin: "40px auto", padding: 20, fontFamily: "system-ui" }}>
+      <h1 style={{ fontSize: 28 }}>Free Poster Prompt Generator</h1>
+      <p>Create high-converting prompts for Daraz, WhatsApp & Facebook ads.</p>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}>
-        <div style={{ border: "1px solid #eee", borderRadius: 14, padding: 16 }}>
-          <label style={{ display: "block", fontWeight: 700, marginBottom: 8 }}>1) Upload image</label>
-          <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-
-          {previewUrl && (
-            <div style={{ marginTop: 12 }}>
-              <img src={previewUrl} alt="preview" style={{ width: "100%", borderRadius: 12 }} />
-            </div>
-          )}
-
-          <div style={{ marginTop: 16 }}>
-            <label style={{ display: "block", fontWeight: 700, marginBottom: 8 }}>2) Platform</label>
-            <select
-              value={mode}
-              onChange={(e) => setMode(e.target.value as Mode)}
-              style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid #ddd" }}
-            >
-              <option value="daraz">Daraz (Square 1080×1080)</option>
-              <option value="whatsapp">WhatsApp Status (1080×1920)</option>
-              <option value="facebook">Facebook Feed (1080×1350)</option>
-            </select>
-          </div>
-
-          <button
-            onClick={generate}
-            disabled={!file || loading}
-            style={{
-              marginTop: 16,
-              width: "100%",
-              padding: 12,
-              borderRadius: 12,
-              border: "none",
-              cursor: loading ? "not-allowed" : "pointer",
-              fontWeight: 800,
-            }}
-          >
-            {loading ? "Generating..." : "Generate Posters"}
-          </button>
-
-          {error && <p style={{ color: "crimson", marginTop: 12 }}>{error}</p>}
-        </div>
-
-        <div style={{ border: "1px solid #eee", borderRadius: 14, padding: 16 }}>
-          <div style={{ fontWeight: 800 }}>3) Results ({results.length})</div>
-
-          {results.length === 0 ? (
-            <p style={{ opacity: 0.7 }}>Generated posters will appear here.</p>
-          ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 10 }}>
-              {results.map((r) => (
-                <div key={r.variant} style={{ border: "1px solid #eee", borderRadius: 12, padding: 10 }}>
-                  <div style={{ fontWeight: 800, marginBottom: 6, textTransform: "capitalize" }}>{r.variant}</div>
-                  <img
-                    src={`data:image/png;base64,${r.b64}`}
-                    alt={r.variant}
-                    style={{ width: "100%", borderRadius: 10 }}
-                  />
-                  <button
-                    onClick={() => download(r.b64, `${mode}-${r.variant}.png`)}
-                    style={{
-                      marginTop: 10,
-                      width: "100%",
-                      padding: 10,
-                      borderRadius: 10,
-                      border: "1px solid #ddd",
-                      background: "white",
-                      cursor: "pointer",
-                      fontWeight: 800,
-                    }}
-                  >
-                    Download PNG
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+      <div style={{ marginTop: 20 }}>
+        <label style={{ fontWeight: 600 }}>Select Platform:</label>
+        <select
+          value={mode}
+          onChange={(e) => setMode(e.target.value as Mode)}
+          style={{ marginLeft: 10, padding: 8 }}
+        >
+          <option value="daraz">Daraz (1080x1080)</option>
+          <option value="whatsapp">WhatsApp Status</option>
+          <option value="facebook">Facebook Feed</option>
+        </select>
       </div>
+
+      <button
+        onClick={generatePrompt}
+        style={{
+          marginTop: 20,
+          padding: 12,
+          background: "black",
+          color: "white",
+          border: "none",
+          cursor: "pointer"
+        }}
+      >
+        Generate Prompt
+      </button>
+
+      {prompt && (
+        <div style={{ marginTop: 30 }}>
+          <h3>Copy This Prompt:</h3>
+          <textarea
+            value={prompt}
+            readOnly
+            rows={10}
+            style={{ width: "100%", padding: 10 }}
+          />
+          <button
+            onClick={() => navigator.clipboard.writeText(prompt)}
+            style={{ marginTop: 10, padding: 10 }}
+          >
+            Copy to Clipboard
+          </button>
+        </div>
+      )}
     </main>
   );
 }
